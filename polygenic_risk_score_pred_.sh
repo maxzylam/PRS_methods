@@ -167,19 +167,19 @@
 ############################################
 ### Logger 
 
-    echo "#######################################" 2>&1 | tee $target.prs_analysis.log
-    echo "### POLYGENIC RISK SCORE PREDICTION ###" 2>&1 | tee -a $target.prs_analysis.log
-    echo "#######################################" 2>&1 | tee -a $target.prs_analysis.log
-    echo "" 2>&1 | tee -a $target.prs_analysis.log
-    echo "Analyst Initials : $(id -u -n)" 2>&1 | tee -a $target.prs_analysis.log
-    echo "" 2>&1 | tee -a $target.prs_analysis.log
-    echo "PRS prediction analysis for $target intiated on $(date)" 2>&1 | tee -a $target.prs_analysis.log
-    echo "" 2>&1 | tee -a $target.prs_analysis.log
-    echo "GWAS Summary statistics = $sumstats" 2>&1 | tee -a $target.prs_analysis.log
+    echo "#######################################" 2>&1 | tee $output.prs_analysis.log
+    echo "### POLYGENIC RISK SCORE PREDICTION ###" 2>&1 | tee -a $output.prs_analysis.log
+    echo "#######################################" 2>&1 | tee -a $output.prs_analysis.log
+    echo "" 2>&1 | tee -a $output.prs_analysis.log
+    echo "Analyst Initials : $(id -u -n)" 2>&1 | tee -a $output.prs_analysis.log
+    echo "" 2>&1 | tee -a $output.prs_analysis.log
+    echo "PRS prediction analysis for $target intiated on $(date)" 2>&1 | tee -a $output.prs_analysis.log
+    echo "" 2>&1 | tee -a $output.prs_analysis.log
+    echo "GWAS Summary statistics = $sumstats" 2>&1 | tee -a $output.prs_analysis.log
     echo ""
-    echo "Target Data for PRS prediction = $target" 2>&1 | tee -a $target.prs_analysis.log
+    echo "Target Data for PRS prediction = $target" 2>&1 | tee -a $output.prs_analysis.log
     echo ""
-    echo "Output prefix for PRS prediction = $output" 2>&1 | tee -a $target.prs_analysis.log
+    echo "Output prefix for PRS prediction = $output" 2>&1 | tee -a $output.prs_analysis.log
 
 ############################################
 
@@ -194,6 +194,7 @@
         ### Extract SNP weights  
 
             # Unzip sumstats
+                sumstats_1=$(echo $sumstats | sed 's/.gz//g')
                 gunzip $sumstats
             # >>> 
 
@@ -201,21 +202,27 @@
                 printf "\nStarting procedures for PRS CS analysis...$(date)\n\n" 2>&1 | tee -a $output.prs_analysis.log
 
             # Check parameters
-                if [ -z "$prscs_env" ]; then echo "PRSCS environment not specified - aborting"; exit 1; else echo "--prscs_env = $prscs_env"; fi
-                if [ -z "$path2prscs" ]; then echo "Path to PRSCS not specified - aborting"; exit 1; else echo "--path2prscs = $path2prscs"; fi
-                if [ -z "$path2prscsref" ]; then echo "Path to PRSCS reference not specified - aborting"; exit 1; else echo "--path2prscsref = $path2prscsref"; fi 
-                if [ -z "$path2bim" ]; then echo "Path to bim not specified - setting default directory"; path2bim=$(pwd); echo "--path2bim = $path2bim"; fi 
-                if [ -z "$path2sumstats" ]; then echo "Path to sumstats not specified - setting defaul directory"; path2sumstats=$(pwd); echo "--path2sumstats = $path2sumstats"; fi
-                if [ -z "$path2output" ]; then echo "Path to output not specified - setting default directory"; path2output=$(pwd); echo "--path2output = $path2output"; fi
+                if [ -z "$prscs_env" ]; then echo "PRSCS environment not specified - aborting"; exit 1; else echo "--prscs_env = $prscs_env"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2prscs" ]; then echo "Path to PRSCS not specified - aborting"; exit 1; else echo "--path2prscs = $path2prscs"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2prscsref" ]; then echo "Path to PRSCS reference not specified - aborting"; exit 1; else echo "--path2prscsref = $path2prscsref"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2bim" ]; then echo "Path to bim not specified - setting default directory"; path2bim=$(pwd); echo "--path2bim = $path2bim"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2sumstats" ]; then echo "Path to sumstats not specified - setting defaul directory"; path2sumstats=$(pwd); echo "--path2sumstats = $path2sumstats"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2output" ]; then echo "Path to output not specified - setting default directory"; path2output=$(pwd); echo "--path2output = $path2output"; fi 2>&1 | tee -a $output.prs_analysis.log
             # >>> 
 
             # generate prscs weights 
+                # write scripts     
+                    for i in $(seq 22)
+                        do echo "$prscs_env/python $path2prscs/PRScs.py --ref_dir=$path2prscsref/ --bim_prefix=$path2bim/$target --sst_file=$path2sumstats/$sumstats_1 --n_gwas=$n_gwas --chrom="$i" --phi=1e-2 --out_dir=$path2output/$output" > $output.prscs.weight.calc.script.chr"$i".sh
+                    done 
+                # >>> 
 
-                for i in $(seq 22)
-                    echo "$prscs_env/python $path2prscs/PRScs.py --ref_dir=$path2prscsref/ --bim_prefix=$path2bim/$target --sst_file=$path2sumstats/$sumstats_1 --n_gwas=$n_gwas --chrom="$i" --phi=1e-2 --out_dir=$path2output/$output"
-                done 
+                # setup xargs and run scripts 
 
+                    process=$(lscpu | sed -n '4,4p' | awk '{print $2/2}')
 
+                    ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
+                # >>> 
 
             
         ############################################
@@ -239,7 +246,7 @@
 
                 # Check sumstats 
                     
-                    printf "\nHeaders for summary statistics as follows....\n"
+                    printf "\nHeaders for summary statistics as follows....\n" 2>&1 | tee -a $output.prs_analysis.log
                         zcat $sumstats | head -11 2>&1 | tee -a $output.prs_analysis.log
                     echo ""
                     
@@ -252,7 +259,7 @@
                         exit 1 
                     else 
 
-                        printf "\nSumstats checks complete\041....Proceeding to clump procedures\n"
+                        printf "\nSumstats checks complete\041....Proceeding to clump procedures\n" 2>&1 | tee -a $output.prs_analysis.log
                     fi 
                 # >>> 
 
@@ -267,10 +274,10 @@
                         # set default parameters
 
                             printf "\nClumping parameters =\n"
-                            if [ -z "$clump_p1" ]; then clump_p1=1; echo "--clump_p1 = $clump_p1"; fi
-                            if [ -z "$clump_p2" ]; then clump_p2=1; echo "--clump-p2 = $clump_p2"; fi
-                            if [ -z "$clump_kb" ]; then clump_kb=500; echo "--clump_kb = $clump_kb"; fi
-                            if [ -z "$clump_r2" ]; then clump_r2=0.1; echo "--clump_r2 = $clump_r2"; fi
+                            if [ -z "$clump_p1" ]; then clump_p1=1; echo "--clump_p1 = $clump_p1"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_p2" ]; then clump_p2=1; echo "--clump-p2 = $clump_p2"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_kb" ]; then clump_kb=500; echo "--clump_kb = $clump_kb"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_r2" ]; then clump_r2=0.1; echo "--clump_r2 = $clump_r2"; fi 2>&1 | tee -a $output.prs_analysis.log
 
                         # >>> 
 

@@ -7,7 +7,9 @@
         path2plink=/home/unix/mlam/mlam/max_bin/plink/
         prscs_env=/home/unix/mlam/mlam/max_bin/envs/prscs/bin
         path2prscs=/home/unix/mlam/mlam/max_bin/PRS_CS/PRScs/
-        path2prscsref=/home/unix/mlam/mlam/max_bin/PRS_CS/PRScs/
+        path2prscsref=/home/unix/mlam/mlam/max_bin/PRS_CS/PRScs/prscs_reffiles/ldblk_1kg_eur/
         n_gwas=8828
+        prspt=Y
+        prscs=Y
 
 
