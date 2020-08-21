@@ -95,6 +95,12 @@
                     --sumstats)
                             sumstats=$VALUE 
                             ;;
+                    --sumstats_pop1)
+                            sumstats_pop1=$VALUE 
+                            ;;
+                    --sumstats_pop2)
+                            sumstats_pop2=$VALUE
+                            ;;
                     --target)
                             target=$VALUE 
                             ;;
@@ -122,11 +128,60 @@
                     --range_file)
                             range_file=$VALUE
                             ;;
-                    --xpop)
-                            xpop=$VALUE 
+                    --prscs_WT)
+                            prscs_WT=$VALUE 
+                            ;;
+                    --prscs_ASC)
+                            prscs_ASC=$VALUE 
+                            ;;
+                    --prcs_env)
+                            prscs_env=$VALUE
+                            ;;
+                    --path2prscs)
+                            path2prscs=$VALUE
+                            ;;
+                    --phi)
+                            phi=$VALUE
+                            ;;
+                    --path2prscsref)
+                            path2prscsref=$VALUE
+                            ;;
+                    --path2bim)
+                            path2bim=$VALUE
+                            ;;
+                    --path2sumstats)
+                            path2sumstats=$VALUE
+                            ;;
+                    --path2output)
+                            path2output=$VALUE
+                            ;;
+                    --path2prscsx)
+                            path2prscsx=$VALUE
+                            ;;
+                    --prscsx_WT)
+                            prscs_WT=$VALUE 
+                            ;;
+                    --prscsx_ASC)
+                            prscs_ASC=$VALUE 
                             ;;
                     --n_gwas)
-
+                            n_gwas=$VALUE
+                            ;;
+                    --n_gwas_pop1)
+                            n_gwas_pop1=$VALUE
+                            ;;
+                    --n_gwas_pop2)
+                            n_gwas_pop2=$VALUE 
+                            ;;
+                    --pop1)
+                            pop1=$VALUE 
+                            ;;
+                    --pop2)
+                            pop2=$VALUE 
+                            ;;
+                    --qsub)
+                            qsub=$VALUE 
+                            ;;
                     $)
                             echo "ERROR:unknown parameter \ "$PARAM\ ""
                             helpscript
@@ -166,29 +221,33 @@
 
 ############################################
 ### Logger 
+    if [ ! -f $output.prs_analysis.log ]; then  
 
-    echo "#######################################" 2>&1 | tee $output.prs_analysis.log
-    echo "### POLYGENIC RISK SCORE PREDICTION ###" 2>&1 | tee -a $output.prs_analysis.log
-    echo "#######################################" 2>&1 | tee -a $output.prs_analysis.log
-    echo "" 2>&1 | tee -a $output.prs_analysis.log
-    echo "Analyst Initials : $(id -u -n)" 2>&1 | tee -a $output.prs_analysis.log
-    echo "" 2>&1 | tee -a $output.prs_analysis.log
-    echo "PRS prediction analysis for $target intiated on $(date)" 2>&1 | tee -a $output.prs_analysis.log
-    echo "" 2>&1 | tee -a $output.prs_analysis.log
-    echo "GWAS Summary statistics = $sumstats" 2>&1 | tee -a $output.prs_analysis.log
-    echo ""
-    echo "Target Data for PRS prediction = $target" 2>&1 | tee -a $output.prs_analysis.log
-    echo ""
-    echo "Output prefix for PRS prediction = $output" 2>&1 | tee -a $output.prs_analysis.log
+        echo "#######################################" 2>&1 | tee $output.prs_analysis.log
+        echo "### POLYGENIC RISK SCORE PREDICTION ###" 2>&1 | tee -a $output.prs_analysis.log
+        echo "#######################################" 2>&1 | tee -a $output.prs_analysis.log
+        echo "" 2>&1 | tee -a $output.prs_analysis.log
+        echo "Analyst Initials : $(id -u -n)" 2>&1 | tee -a $output.prs_analysis.log
+        echo "" 2>&1 | tee -a $output.prs_analysis.log
+        echo "PRS prediction analysis for $target intiated on $(date)" 2>&1 | tee -a $output.prs_analysis.log
+        echo "" 2>&1 | tee -a $output.prs_analysis.log
+        echo "GWAS Summary statistics = $sumstats" 2>&1 | tee -a $output.prs_analysis.log
+        echo ""
+        echo "Target Data for PRS prediction = $target" 2>&1 | tee -a $output.prs_analysis.log
+        echo ""
+        echo "Output prefix for PRS prediction = $output" 2>&1 | tee -a $output.prs_analysis.log
+    else 
+
+        echo " # # # # # # > > > > < < < < # # # # # #"  2>&1 | tee -a $output.prs_analysis.log
+        echo ".....CONTINUING....."  2>&1 | tee -a $output.prs_analysis.log
+    fi 
 
 ############################################
-
-
 
 ############################################
 ### Perform PRS CS 
 
-    if [ "$prscs" == "Y" ]; then 
+    if [ "$prscs_WT" == "Y" ]; then 
 
         ############################################
         ### Extract SNP weights  
@@ -208,25 +267,214 @@
                 if [ -z "$path2bim" ]; then echo "Path to bim not specified - setting default directory"; path2bim=$(pwd); echo "--path2bim = $path2bim"; fi 2>&1 | tee -a $output.prs_analysis.log
                 if [ -z "$path2sumstats" ]; then echo "Path to sumstats not specified - setting defaul directory"; path2sumstats=$(pwd); echo "--path2sumstats = $path2sumstats"; fi 2>&1 | tee -a $output.prs_analysis.log
                 if [ -z "$path2output" ]; then echo "Path to output not specified - setting default directory"; path2output=$(pwd); echo "--path2output = $path2output"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$phi" ]; then echo "Phi value not specified - setting default parameter 1e-2"; phi=1e-2; echo "--phi=$phi"; fi 2>&1 | tee -a $output.prs_analysis.log
+            
+                    path2bim=${path2bim:="$(pwd)"}
+                    path2sumstats=${path2sumstats:="$(pwd)"}
+                    path2output=${path2output:="$(pwd)"}
+                    phi=${phi:="1e-2"}
             # >>> 
 
             # generate prscs weights 
                 # write scripts     
                     for i in $(seq 22)
-                        do echo "$prscs_env/python $path2prscs/PRScs.py --ref_dir=$path2prscsref/ --bim_prefix=$path2bim/$target --sst_file=$path2sumstats/$sumstats_1 --n_gwas=$n_gwas --chrom="$i" --phi=1e-2 --out_dir=$path2output/$output" > $output.prscs.weight.calc.script.chr"$i".sh
+                        do echo "$prscs_env/python $path2prscs/PRScs.py --ref_dir=$path2prscsref/ --bim_prefix=$path2bim/$target --sst_file=$path2sumstats/$sumstats_1 --n_gwas=$n_gwas --chrom="$i" --phi=$phi --out_dir=$path2output/$output" > $output.prscs.weight.calc.script.chr"$i".sh
                     done 
                 # >>> 
 
-                # setup xargs and run scripts 
+                # interactive mode 
 
-                    process=$(lscpu | sed -n '4,4p' | awk '{print $2/2}')
+                    if [ "$qsub" == "N" ]; then 
 
-                    ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
+                        # setup xargs and run scripts 
+                            process=$(lscpu | sed -n '4,4p' | awk '{print $2}')
+                            ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
+                        # >>> 
+                    
+                        # submit to HPC
+
+                    elif [ "$qsub" == "Y" ]; then 
+                        for i in $(seq 22)
+                            do qsub -cwd -N prscs.wt.job."$i" -l h_vmem=8G -l h_rt=24:00:00 $output.prscs.weight.calc.script.chr"$i".sh
+                        done
+
+                        printf "\nPRS-CS scripts for computing weights for allelic scoring submitted to HPC - $(date)\n" 2>&1 | tee -a $output.prs_analysis.log
+                        printf "\nThe PRS wrapper script would exit momentarily to allow for the HPC job to complete\n\n" 2>&1 | tee -a $output.prs_analysis.log
+                        printf "\nWhen the HPC jobs are completed - allelic scoring can be carried out using the --prscs_ASC=Y flag" 2>&1 | tee -a $output.prs_analysis.log
+                    fi 
+                
                 # >>> 
+        ############################################
 
+    fi
+
+    if [ "$prscs_ASC" == "Y" ]; then 
+        
+        ############################################
+        ### Allelic Scoring for PRSCS 
             
+            # Consolidate weights 
+                printf "" > $output.prscs.snp.weights.txt
+                for i in $(seq 22)
+                    do cat "$output"_pst_eff*chr"$i"*txt 
+                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscs.snp.weights.txt
+            # >>> 
+
+            # allelic scoring 
+                $path2plink/plink --bfile $target --score $output.prscs.snp.weights.txt 2 4 6 --out $output.prscs.scoring
+            # >>>
+
+            # extract prs scores 
+                cat $output.prscs.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed '1 i\FID SCORE_prscs' > $output.prscs.file.txt
+            # >>> 
+        ############################################
+
+        ############################################
+        ### Move files to folder
+
+            if [ -f $output.prscs.file.txt ]; then 
+                printf "\nPRSCS  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
+            
+                mkdir $output.prscs
+                mv *prscs* $output.prscs
+                mv *pst_eff* $output.prscs
+                gzip $sumstats_1
+
+            else
+                printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
+
+            fi 
         ############################################
     fi
+
+
+############################################
+
+############################################
+### Perform PRCSx
+
+    if [ "$prscsx_WT" == "Y" ]; then 
+
+        ############################################
+        ### Extract SNP Weights
+
+            # Unzip sumstats
+                if [ ! -f "$sumstats_pop1" ]; then 
+                    echo "Can't find pop1 sumstats file - Aborting"
+                    exit 1 
+                fi             
+
+                if [ ! -f "$sumstats_pop2" ]; then 
+                    echo "Can't find pop2 sumstats file - Aborting"
+                    exit 1 
+                fi 
+
+                sumstats_1=$(echo $sumstats_pop1 | sed 's/.gz//g')
+                sumstats_2=$(echo $sumstats_pop2 | sed 's/.gz//g')
+                gunzip $sumstats_pop1
+                gunzip $sumstats_pop2
+
+            # >>> 
+
+            # Log start  
+                printf "\n-----------------------------------------------------------------\n" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\nStarting procedures for PRS CSx analysis...$(date)\n\n" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\nTwo sets of summary statistics are used for PRS CS x analysis\n\n" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\n --sumstats_pop1 = $sumstats_pop1\n --sumstats_pop2 = $sumstats_pop2\n" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\n --n_gwas_pop1 = $n_gwas_pop1\n --n_gwas_pop2 = $n_gwas_pop2\n" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\n --pop1 = $pop1\n --pop2 = $pop2\n" 2>&1 | tee -a $output.prs_analysis.log
+
+                if [[ -z "$n_gwas_pop1" || -z "$n_gwas_pop2" || -z "$pop1" || -z "$pop2" ]]; then 
+                    echo "Please check the parameters very carefully - one of the population parameters was not entered properly"
+                    echo "Aborting...."
+                fi 
+            # >>> 
+
+            # Check parameters
+                if [ -z "$prscs_env" ]; then echo "PRSCS environment not specified - aborting"; exit 1; else echo "--prscs_env = $prscs_env"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2prscsx" ]; then echo "Path to PRSCSx not specified - aborting"; exit 1; else echo "--path2prscsx = $path2prscsx"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2prscsref" ]; then echo "Path to PRSCS reference not specified - aborting"; exit 1; else echo "--path2prscsref = $path2prscsref"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2bim" ]; then echo "Path to bim not specified - setting default directory"; path2bim=$(pwd); echo "--path2bim = $path2bim"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2sumstats" ]; then echo "Path to sumstats not specified - setting defaul directory"; path2sumstats=$(pwd); echo "--path2sumstats = $path2sumstats"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$path2output" ]; then echo "Path to output not specified - setting default directory"; path2output=$(pwd); echo "--path2output = $path2output"; fi 2>&1 | tee -a $output.prs_analysis.log
+                if [ -z "$phi" ]; then echo "Phi value not specified - setting default parameter 1e-2"; phi=1e-2; echo "--phi=$phi"; fi 2>&1 | tee -a $output.prs_analysis.log                
+                printf "\n-----------------------------------------------------------------\n" 2>&1 | tee -a $output.prs_analysis.log
+                    path2bim=${path2bim:="$(pwd)"}
+                    path2sumstats=${path2sumstats:="$(pwd)"}
+                    path2output=${path2output:="$(pwd)"}
+                    phi=${phi:="1e-2"}
+            # >>> 
+
+            # generate prs csx weights
+                for i in $(seq 22)
+                    do echo "$prscs_env/python $path2prscsx/PRScsx.py --ref_dir=$path2prscsref --bim_prefix=$path2bim/$target --sst_file=$path2bim/$sumstats_1,$path2bim/$sumstats_2 --n_gwas=$n_gwas_pop1,$n_gwas_pop2 --pop=$pop1,$pop2  --chrom="$i" --phi=$phi --out_dir=$path2output --out_name=$output" > $output.prscsx.weight.calc.script.chr"$i".sh
+                done
+
+            # >>>
+
+            # interactive mode 
+
+                if [ "$qsub" == "N" ]; then 
+
+                    # setup xargs and run scripts 
+                        process=$(lscpu | sed -n '4,4p' | awk '{print $2}')
+                        ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
+                    # >>> 
+                
+                    # submit to HPC
+
+                elif [ "$qsub" == "Y" ]; then 
+                    for i in $(seq 22)
+                        do qsub -cwd -N prscsx.wt.job."$i" -l h_vmem=8G -l h_rt=24:00:00 $output.prscsx.weight.calc.script.chr"$i".sh
+                    done
+
+                    printf "\nPRS-CSx scripts for computing weights for allelic scoring submitted to HPC - $(date)\n" 2>&1 | tee -a $output.prs_analysis.log
+                    printf "\nThe PRS wrapper script would exit momentarily to allow for the HPC job to complete\n\n" 2>&1 | tee -a $output.prs_analysis.log
+                    printf "\nWhen the HPC jobs are completed - allelic scoring can be carried out using the --prscs_ASC=Y flag" 2>&1 | tee -a $output.prs_analysis.log
+                fi 
+            
+            # >>> 
+        ############################################   
+    
+    fi
+
+        ############################################
+        ### Allelic Scoring for PRSCS 
+            
+            # Consolidate weights 
+                printf "" > $output.prscs.snp.weights.txt
+                for i in $(seq 22)
+                    do cat "$output"_pst_eff*chr"$i"*txt 
+                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscs.snp.weights.txt
+            # >>> 
+
+            # allelic scoring 
+                $path2plink/plink --bfile $target --score $output.prscs.snp.weights.txt 2 4 6 --out $output.prscs.scoring
+            # >>>
+
+            # extract prs scores 
+                cat $output.prscs.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed '1 i\FID SCORE_prscs' > $output.prscs.file.txt
+            # >>> 
+        ############################################
+
+        ############################################
+        ### Move files to folder
+
+            if [ -f $output.prscs.file.txt ]; then 
+                printf "\nPRSCS  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
+            
+                mkdir $output.prscs
+                mv *prscs* $output.prscs
+                mv *pst_eff* $output.prscs
+                gzip $sumstats_1
+
+            else
+                printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
+
+            fi 
+        ############################################
+
+
 ############################################
 
 ############################################
@@ -274,11 +522,14 @@
                         # set default parameters
 
                             printf "\nClumping parameters =\n"
-                            if [ -z "$clump_p1" ]; then clump_p1=1; echo "--clump_p1 = $clump_p1"; fi 2>&1 | tee -a $output.prs_analysis.log
-                            if [ -z "$clump_p2" ]; then clump_p2=1; echo "--clump-p2 = $clump_p2"; fi 2>&1 | tee -a $output.prs_analysis.log
-                            if [ -z "$clump_kb" ]; then clump_kb=500; echo "--clump_kb = $clump_kb"; fi 2>&1 | tee -a $output.prs_analysis.log
-                            if [ -z "$clump_r2" ]; then clump_r2=0.1; echo "--clump_r2 = $clump_r2"; fi 2>&1 | tee -a $output.prs_analysis.log
-
+                            if [ -z "$clump_p1" ]; then echo "Primary clumping P not specified - setting default"; clump_p1=${clump_p1:="1"}; echo "--clump_p1 = $clump_p1"; else echo "--clump_p1 = $clump_p1"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_p2" ]; then echo "Secondary clumping P not specified - setting default"; clump_p2=${clump_p2:="1"}; echo "--clump-p2 = $clump_p2"; else echo "--clump-p2 = $clump_p2"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_kb" ]; then echo "Clump window not specified - setting default"; clump_kb=${clump_kb:="500"}; echo "--clump_kb = $clump_kb"; else echo "--clump_kb = $clump_kb"; fi 2>&1 | tee -a $output.prs_analysis.log
+                            if [ -z "$clump_r2" ]; then echo "Clump r2 not specified - setting default"; clump_r2=${clump_r2:="0.1"}; echo "--clump_r2 = $clump_r2"; else echo "--clump_kb = $clump_kb"; fi 2>&1 | tee -a $output.prs_analysis.log
+                                clump_p1=${clump_p1:="1"}
+                                clump_p2=${clump_p2:="1"}
+                                clump_kb=${clump_kb:="500"}
+                                clump_r2=${clump_r2:="0.1"}
                         # >>> 
 
                         # plink clump command 
@@ -295,7 +546,6 @@
 
                             # extract chr6 no mhc
                                 cat $output.clumped | awk '{if($1 == 6 && ($4 < 25000000 || $4 > 35000000)) print $3, $1, $4, $5}' >> $output.xmhc.clumped
-                            # >>> 
 
                             # sort clumped by chr and bp 
                                 cat $output.xmhc.clumped | sort -k 2 -n -k 3 -n | sed '1,2d' > $output.xmhc.clumped.sort
@@ -304,6 +554,10 @@
                             # merge with sumstats 
                                 ./merge.files.sh --FILE1=$output.xmhc.clumped.sort --FILE2=$sumstats_1 --KEY=SNP --OUTMERGE=$output.xmhc.clumped.sort.combined
                                 gzip $sumstats_1
+
+                                if [ ! -f $output.xmhc.clumped.sort.combined ]; then 
+                                    echo "WARNING! Can't find  $output.xmhc.clumped.sort.combined - It's highly possible that the merge script did not work" 2>&1 | tee -a $output.prs_analysis.log
+                                fi 
                             # >>>     
                         # >>> 
                     #>>>
@@ -345,7 +599,8 @@
             # Create additional files for extracting allelic scores
 
                 # Create SNP - Pvalue file 
-                cat $output.xmhc.clumped.sort.combined | awk '{print $1, $8}' | sed '1,1d' | sed '1 i\SNP P' > $output.pvalue
+                
+                    cat $output.xmhc.clumped.sort.combined | awk '{print $1, $8}' | sed '1,1d' | sed '1 i\SNP P' > $output.pvalue
                 # >>>
             # >>>
                 
@@ -391,20 +646,33 @@
         ############################################
 
         ############################################
-        ### Clean up #1
+        ### Move files to folder
 
             if [ -f $output.prs.file.txt ]; then 
-                printf "\nPolygenic Allelic scoring is complete\041\041...$(date)" 2>&1 | tee -a $output.prs_analysis.log
+                printf "\nPRS-PT  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
-                rm $output.pvalue
-                rm $output.range_list
-                rm *.nosex
-                rm $output*.profile*
+                mkdir $output.prspt
+                mv *profile* $output.prspt
+                mv $output.nosex $output.prspt
+                mv $output.clumped $output.prspt
+                mv $output.log $output.prspt
+                mv $output.xmhc.clumped $output.prspt
+                mv $output.xmhc.clumped.sort $output.prspt
+                mv $output.xmhc.clumped.sort.combined $output.prspt
+                mv $output.range_list $output.prspt
+                mv $output.pvalue $output.prspt
+                mv $output.scoring.nosex $output.prspt
+                mv $output.scoring.log $output.prspt
+                mv $output.ID.txt $output.prspt
+                mv $output.prs.file.txt $output.prspt
+
+
 
             else
                 printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
 
             fi 
         ############################################
+
     fi 
 ############################################
