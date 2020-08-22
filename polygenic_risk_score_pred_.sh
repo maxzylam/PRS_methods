@@ -407,7 +407,7 @@
 
             # generate prs csx weights
                 for i in $(seq 22)
-                    do echo "$prscs_env/python $path2prscsx/PRScsx.py --ref_dir=$path2prscsref --bim_prefix=$path2bim/$target --sst_file=$path2bim/$sumstats_1,$path2bim/$sumstats_2 --n_gwas=$n_gwas_pop1,$n_gwas_pop2 --pop=$pop1,$pop2  --chrom="$i" --phi=$phi --out_dir=$path2output --out_name=$output" > $output.prscsx.weight.calc.script.chr"$i".sh
+                    do echo "$prscs_env/python $path2prscsx/PRScsx.py --ref_dir=$path2prscsref --bim_prefix=$path2bim/$target --sst_file=$path2bim/$sumstats_1,$path2bim/$sumstats_2 --n_gwas=$n_gwas_pop1,$n_gwas_pop2 --pop=$pop1,$pop2  --chrom="$i" --phi=$phi --out_dir=$path2output --meta=True --out_name=$output" > $output.prscsx.weight.calc.script.chr"$i".sh
                 done
 
             # >>>
@@ -438,42 +438,64 @@
     
     fi
 
+    if [ "$prscsx_ASC" == "Y" ]; then 
+    
         ############################################
         ### Allelic Scoring for PRSCS 
             
             # Consolidate weights 
-                printf "" > $output.prscs.snp.weights.txt
+                printf "" > $output.prscsx.$pop1.snp.weights.txt
                 for i in $(seq 22)
-                    do cat "$output"_pst_eff*chr"$i"*txt 
-                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscs.snp.weights.txt
+                    do cat "$output"_"$pop1"_pst_eff*chr"$i"*txt 
+                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscsx.$pop1.snp.weights.txt
+
+                printf "" > $output.prscsx.$pop2.snp.weights.txt
+                for i in $(seq 22)
+                    do cat "$output"_"$pop2"_pst_eff*chr"$i"*txt 
+                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscsx.$pop2.snp.weights.txt
+
+                printf "" > $output.prscsx.meta.snp.weights.txt
+                for i in $(seq 22)
+                    do cat "$output"_META_pst_eff*chr"$i"*txt 
+                done | sort -u -t \t -k1 | sort -k 1 -n -k 3 -n  >> $output.prscsx.meta.snp.weights.txt
             # >>> 
 
             # allelic scoring 
-                $path2plink/plink --bfile $target --score $output.prscs.snp.weights.txt 2 4 6 --out $output.prscs.scoring
+                $path2plink/plink --bfile $target --score $output.prscsx.$pop1.snp.weights.txt 2 4 6 --out $output.prscsx.$pop1.scoring
+                $path2plink/plink --bfile $target --score $output.prscsx.$pop2.snp.weights.txt 2 4 6 --out $output.prscsx.$pop2.scoring
+                $path2plink/plink --bfile $target --score $output.prscsx.meta.snp.weights.txt 2 4 6 --out $output.prscsx.meta.scoring                
             # >>>
 
             # extract prs scores 
-                cat $output.prscs.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed '1 i\FID SCORE_prscs' > $output.prscs.file.txt
+                cat $output.prscsx.$pop1.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_"$pop1"" > $output.prscsx.$pop1.file.txt
+                cat $output.prscsx.$pop2.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_"$pop2"" > $output.prscsx.$pop2.file.txt
+                cat $output.prscsx.meta.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_meta" > $output.prscsx.meta.file.txt
+
+                prscsxscorefiles=$(echo "$output.prscsx.$pop1.file.txt $output.prscsx.$pop2.file.txt $output.prscsx.meta.file.txt")
+
+                paste -d ' ' $prscsxscorefiles | awk '{print $1, $2, $4, $6}' > $output.prscsx.file.txt
             # >>> 
         ############################################
 
         ############################################
         ### Move files to folder
 
-            if [ -f $output.prscs.file.txt ]; then 
-                printf "\nPRSCS  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
+            if [ -f $output.prscsx.file.txt ]; then 
+                printf "\nPRSCSx  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
-                mkdir $output.prscs
-                mv *prscs* $output.prscs
-                mv *pst_eff* $output.prscs
+                mkdir $output.prscsx
+                mv *prscsx* $output.prscsx
+                mv *pst_eff* $output.prscsx
                 gzip $sumstats_1
+                gzip $sumstats_2
 
             else
                 printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
 
             fi 
         ############################################
-
+    
+    fi
 
 ############################################
 

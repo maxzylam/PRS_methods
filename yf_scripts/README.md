@@ -50,4 +50,24 @@ SSE.full<-sum(Full$residuals**2)
 R2.partial<-(SSE.null-SSE.full)/SSE.null  
 ```
 
+### Liability scale conversion 
+```
+h2l_R2N <- function(k, r2n, p) {
+  # k = population prevalence
+  # r2n = Nagelkerke's attributable to genomic profile risk score
+  # p = proportion of cases in the case-control sample
+  # calculates proportion of variance explained on the liability scale
+  # from ABC at http://www.complextraitgenomics.com/software/
+  # Lee SH, Goddard ME, Wray NR, Visscher PM. (2012) A better coefficient of determination for genetic profile analysis. Genet Epidemiol. 2012 Apr;36(3):214-24.
+  x <- qnorm(1 - k)
+  z <- dnorm(x)
+  i <- z / k
+  cc <- k * (1 - k) * k * (1 - k) / (z^2 * p * (1 - p))
+  theta <- i * ((p - k)/(1 - k)) * (i * ((p - k) / ( 1 - k)) - x)
+  e <- 1 - p^(2 * p) * (1 - p)^(2 * (1 - p))
+  h2l_R2N <- cc * e * r2n / (1 + cc * e * theta * r2n) 
+}
 
+ r2n <- my_r2$Pseudo.R.squared.for.model.vs.null[3]
+ r2l <- h2l_R2N(k=0.01, r2n=r2n, p=sum(my_subset$PHENO==1)/sum(my_subset$PHENO %in% c(0,1)))
+```
