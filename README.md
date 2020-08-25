@@ -1,4 +1,4 @@
-# WRAPPER SCRIPT FOR POLYGENIC RISK SCORE ANALYSIS
+# HELPER SCRIPTS FOR POLYGENIC RISK SCORE ANALYSIS
 
 This wrapper consists of several helper scripts that would help the user carry out polygenic risk prediction in their own datasets give a set of summary statistics. The methods that the helper scripts are based on include tradtional polygenic risk scoring methods reported in Purcell et al., 2007 as part of the PLINK software, PRSCS reported by Ge et al., 2019, and the forthcoming PRSCSx - a cross ancestry version of PRSCS developed by Yunfeng, Ruan, Ge Tian and Hailiang Huang. All functions of the wrapper are consolidated in a single script, but would require various software and dependencies to be installed. 
 
@@ -108,3 +108,37 @@ Summary statistics input format for the current helper script takes the form of
 --output <--- output suffix for files that are generated from the current set of helper scripts 
 
 --path2plink <--- The plink software is used in all instances for allelic scoring. The idea behind allelic scoring is summing up the genotype of 
+
+## PRS-PT method
+
+The PRS-PT approach is similar to what we have in PLINK. The *default* clumping options to extract LD independent SNPs for PRS are
+
+- --clump_p1=1
+- --clump_p2=1
+- --clump_r2=0.1
+- --clump_kb=500
+- MHC region on chromosome 6 are removed post clumping 
+
+## PRS-CS
+
+Again, users are encouraged to familarize themselves with the function of PRS-CS @ https://github.com/getian107/PRScs. Most of the options available for PRSCS are self-explantory, and similar to what is available on the PRS-CS github as indicated. Nevetheless, it is worth mentioning that we have split the PRS-CS estimation into two steps 
+
+    a) PRS-CS estimates weights for PRS-prediction. In the first step, the weights are estimated using the --prscs_WT=Y flag. In combination with the --prscs_WT=Y flag the --qsub option provides the user with several options. The fastest approach to computing weights is --qsub=Y. This approach sends the analysis per chromosome to a cluster. For now the wrapper is only tested for SGE (qsub) cluster. If users have access to a single high powered machine, or using the docker image provided with this wrapper on a suffciently powered computer, or if the user has a virtual machine set up on the cloud, --qsub=N, might be considered. The --qsub=N approach, parallelizes jobs using xargs, and will split the analysis into as many CPUs as the machine has. **WARNING** - while its possible to parallelize jobs, take care that there is enough memory on the system, or else the jobs would crash, or stall. Finally, users could run jobs in --qsub=S mode, which computes PRS-CS weights one chromosome at a time, using only 1 CPU for all jobs. This is useful for debugging, or if the user does not have access to a very high powered machine. The caveat is running PRS-CS with 1 CPU would take a couple of hours. 
+
+    b) After step a) the script would exit to give time for PRS-CS weights to compute. After the weights are computed, user may resume the analysis using the --prscs_ASC=Y flag. This would invoke helper scripts that would carry out allelic scoring based on the PRS weights. For simplicity, users should simply swap out --prscs_WT=Y to --prscs_ASC=Y. All other options should stay the same. 
+
+## PRS-CSx 
+
+The procedures for PRS-CSx are largely similar to what was described in PRS-CS with a few notable differences. Users would notice that PRS-CSx requires input for two ancestries. Hence pop1 and pop2 are included as options and the suffixes for the n_gwas options and sumstats options include pop1 and pop2. 
+
+**IMPORTANT**
+
+In PRS-CS, --path2prscsref to point to the exact path to which the reference files are stored for each ancestry, while in PRS-CSx this same flag would point to the folder to which the folder are stored (one level up the directory tree). For example, 
+
+    PRS-CS
+        --path2prscsref=/home/user/reference/ldblk_1kg_eur
+
+    PRS-CSx
+        --path2prscsref=/home/user/reference/
+
+In the reference directory, users are reminded to download the SNP manifest in the reference directory aside from the LD reference files. 

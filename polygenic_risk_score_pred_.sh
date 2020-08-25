@@ -42,7 +42,7 @@
                 --path2sumstats) : Path to sumstats ( defaults to present workding directory)
                 --path2output) : Path to output (defaults to present working directory) 
                 --n_gwas)   :   sample size  
-                --qsub)     :   if Y, submits parallel jobs to a HPC cluster. If N, runs parallel jobs using xargs
+                --qsub)     :   if Y, submits parallel jobs to a HPC cluster. If N, runs parallel jobs using xargs. If S, run all scripts serially on a single cpu
 
                 PRS-CSx options 
 
