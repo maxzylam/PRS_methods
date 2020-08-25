@@ -17,6 +17,12 @@ This wrapper consists of several helper scripts that would help the user carry o
 
 As there are multiple dependencies to set up to get the wrapper working, we have tried to streamline the process by providing a docker image with these dependencies installed. (https://personal.broadinstitute.org/hhuang//public//MDD-SCZ-prs/). With the docker image, all the user is required to do is to download the reference files for PRS CS and PRS CSx which are also found in the same link above. 
 
+We have provided an environment.yml file to set up python environment for PRS-CS and PRS-CSx. You can set up the environment using the following command 
+
+``` 
+conda env create --file environment.yml 
+``` 
+
 ## Helper script functions
 
 The functions of the wrapper could be exposed by the --help flag within the script
