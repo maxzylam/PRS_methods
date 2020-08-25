@@ -179,7 +179,7 @@
                     --prscs_ASC)
                             prscs_ASC=$VALUE 
                             ;;
-                    --prcs_env)
+                    --prscs_env)
                             prscs_env=$VALUE
                             ;;
                     --path2prscs)
@@ -420,7 +420,7 @@
 ############################################
 
 ############################################
-### Perform PRCSx
+### Perform PRSCSx
 
     if [ "$prscsx_WT" == "Y" ]; then 
 
