@@ -14,10 +14,56 @@
                 General file definition 
                 
                 --sumstats) :   Input summary statistics - Please make sure it is gzipped
+                --sumstats_pop1) : Input summary statistics - PRSCSx population 1 summaty statistics
+                --sumstats_pop2) : Input summary statistics - PRSCSx population 2 summary statistics 
                 --target)   :   Target prediction file - plink binary files
                                 ^ Users are highly adviced to have QC-ed their target file via RICOPILI
                 --output)   :   output prefix for PRS analysis
+                --path2plink : Path to plink <--- This is score computeing allele scores 
+
+                Polygenic Risk - P-value Thresholding 
                 
+                --prspt) : if Y, runs PRS-PT analysis
+                --clump_p1) : Primary P value 
+                --clump_p2) : Secondary P value
+                --clump_r2) : LD threshold
+                --clump_kb) : Genomic window for clumping
+                --range_file) : (optional) - See plink instructions --q-range-file
+
+                PRS-CS options 
+
+                --prscs_WT) : Stage1 - Run weighting step of PRS-CS. 
+                --prscs_ASC) : Stage 2 - Run Allelic scoring step of PRS-CS 
+                --prscs_env) : Path to PRSCS environment 
+                --path2prscs) : Path to PRSCS .py script 
+                --phi)  : PRSCS tuning parameter (defaults to 1e-2)
+                --path2prscsref) : Path to reference folders 
+                --path2bim) : Path to target file (defaults to present working directory)
+                --path2sumstats) : Path to sumstats ( defaults to present workding directory)
+                --path2output) : Path to output (defaults to present working directory) 
+                --n_gwas)   :   sample size  
+                --qsub)     :   if Y, submits parallel jobs to a HPC cluster. If N, runs parallel jobs using xargs
+
+                PRS-CSx options 
+
+                --prscsx_WT) : Stage 1 - Run weighting step of PRS-CSx 
+                --prscsx_ASC) : Stage 2 - Run Allelic scoring step of PRS-CSx 
+                --prscs_env) : (Not a typo) This will be the same as PRS-CS 
+                --path2prscsx) : Path to PRSCSx .py script
+                --pop1) : Population for sumstats 1 
+                --pop2) : Population for sumstats 2 
+                --n_gwas_pop1)   :   sample size for population 1 
+                --n_gwas_pop2)   :   sample size for population 2 
+
+                PRS Modelling 
+
+                --prsmodelling) :   if Y, runs modelling module 
+                --prsfile)  :   PRS file that consists of allelic scores from previous steps. Note unique ID is FID 
+                --pcafile)  :   PCA file generated based on individual level genotype, Note unique ID is FID
+                --coco)     :   PCs <--- C1,C2,C3,... comma delkmited with no white space
+                --prs_predictors : PRS predictors, these are columns with SCORE prefix
+                --trait     :   [Binary|Quantitative], Binary = case control DV, Quantitative = continuous DV
+                --prev      :   If --trait=Binary, --prev=[population prevalence of the disease]
                 "
     
     }
@@ -31,10 +77,8 @@
     echo "
         library(\"data.table\")
         library(\"tidyverse\")
-
         file1 <- fread(\"FILE1\")
         file2 <- fread(\"FILE2\")
-
         file1file2 <- inner_join(file1, file2, by=\"KEY\")
         fwrite(file1file2, file=\"OUTMERGE\", quote=FALSE, sep=\"\t\", na=\"NA\")
     " > file_merge
@@ -68,8 +112,9 @@
         echo \"cat file_merge | sed 's/FILE1/\$FILE1/g' | sed 's/FILE2/\$FILE2/g' | sed 's/KEY/\$KEY/g' | sed 's/OUTMERGE/\$OUTMERGE/g' > merge.R\" > merge.sh
 
         bash merge.sh
-
+        
         R CMD BATCH --no-save merge.R
+        
         " > merge.files.sh
 
         chmod +x merge.files.sh
@@ -181,6 +226,27 @@
                             ;;
                     --qsub)
                             qsub=$VALUE 
+                            ;;
+                    --prsmodelling)
+                            prsmodelling=$VALUE 
+                            ;;
+                    --prsfile)
+                            prsfile=$VALUE 
+                            ;;
+                    --pcafile)
+                            pcafile=$VALUE
+                            ;;
+                    --coco)
+                            coco==$VALUE 
+                            ;;
+                    --prs_predictors)
+                            prs_predictors=$VALUE
+                            ;;
+                    --trait)
+                            trait=$VALUE 
+                            ;;
+                    --prev)
+                            prev=$VALUE 
                             ;;
                     $)
                             echo "ERROR:unknown parameter \ "$PARAM\ ""
@@ -325,7 +391,7 @@
             # >>>
 
             # extract prs scores 
-                cat $output.prscs.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed '1 i\FID SCORE_prscs' > $output.prscs.file.txt
+                cat $output.prscs.scoring.profile | awk '{print $1,$3,$4,$6}' | sed '1,1d' | sed '1 i\FID PHENO CNT_prscs SCORE_prscs' > $output.prscs.file.txt
             # >>> 
         ############################################
 
@@ -467,9 +533,9 @@
             # >>>
 
             # extract prs scores 
-                cat $output.prscsx.$pop1.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_"$pop1"" > $output.prscsx.$pop1.file.txt
-                cat $output.prscsx.$pop2.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_"$pop2"" > $output.prscsx.$pop2.file.txt
-                cat $output.prscsx.meta.scoring.profile | awk '{print $1,$6}' | sed '1,1d' | sed "1 i\FID SCORE_prscsx_meta" > $output.prscsx.meta.file.txt
+                cat $output.prscsx.$pop1.scoring.profile | awk '{print $1,$3,$4,$6}' | sed '1,1d' | sed "1 i\FID PHENO CNT_prscsx_"$pop1" SCORE_prscsx_"$pop1"" > $output.prscsx.$pop1.file.txt
+                cat $output.prscsx.$pop2.scoring.profile | awk '{print $1,$4,$6}' | sed '1,1d' | sed "1 i\FID CNT_prscsx_"$pop2" SCORE_prscsx_"$pop2"" > $output.prscsx.$pop2.file.txt
+                cat $output.prscsx.meta.scoring.profile | awk '{print $1,$4,$6}' | sed '1,1d' | sed "1 i\FID _prscsx_meta SCORE_prscsx_meta" > $output.prscsx.meta.file.txt
 
                 prscsxscorefiles=$(echo "$output.prscsx.$pop1.file.txt $output.prscsx.$pop2.file.txt $output.prscsx.meta.file.txt")
 
@@ -611,6 +677,7 @@
                     echo "0.4 0 0.4" >> $output.range_list
                     echo "0.5 0 0.5" >> $output.range_list
                     echo "1 0 1" >> $output.range_list
+                
                 elif [ -f "$range_file" ]; then 
 
                     cat $range_file > $output.range_list
@@ -645,22 +712,22 @@
                 # Create ID.txt file 
                     ptfileone=$(cat $output.profile.list | sed -n '1,1p')
 
-                    cat $ptfileone | awk '{print $1}' > $output.ID.txt
+                    cat $ptfileone | awk '{print $1, $3}' > $output.ID.txt
                 # >>>
 
                 # Create score.txt files 
                     while read prsfile 
-                        do cat $prsfile | awk '{print $6}' > $prsfile.prs.score.txt
+                        do cat $prsfile | awk '{print $4, $6}' > $prsfile.prs.score.txt
                     done < $output.profile.list
                 # >>> 
 
                 # Create score.list 
                     prsscorelist=$(ls -tr *.prs.score.txt | tr '\n' ' ')
-                    prsheader=$(cat $output.range_list | awk '{print "SCORE_"$1}' | tr '\n' ' ')
+                    prsheader=$(cat -n $output.range_list | awk '{print "CNT_"$1, "SCORE_"$1}' | tr '\n' ' ')
                 # >>>
 
                 # prsfile with FID
-                    echo "FID $prsheader" > $output.prs.file.txt
+                    echo "FID PHENO $prsheader" > $output.prs.file.txt
                     paste -d ' ' $output.ID.txt $prsscorelist | sed '1,1d' >> $output.prs.file.txt
                 # >>> 
             # >>>
@@ -697,4 +764,232 @@
         ############################################
 
     fi 
+############################################
+
+############################################
+### PRS modelling 
+    if [ "$prsmodelling" == "Y" ]; then 
+        # Logger  
+
+            printf "\nStarting Procedures for PRS modelling....$(date)\n\n" 2>&1 | tee -a $output.prs_analysis.log
+
+        # >>>
+
+        # file checks 
+
+            if [ ! -f "$prsfile" ]; then 
+                echo "Can't find prs file - plese check if you are in the right directory!"
+                echo "Aborting now..."
+                exit 1
+            fi 
+
+            if [ ! -f "$pcafile" ]; then 
+                echo "Can't fine pca file - please check that the pca file is copied into the prs directory"
+                echo "Also, we are highly encouraging users to run their genotype data through the RICOPILI pipeline for QC and PCA procedures"
+                echo "Aborting..."
+                exit 1 
+            fi
+
+            if [ -z "$coco" ]; then 
+                echo "Covariates not specified for PRS modelling"
+                echo "Please specify covariates using the --coco=C1,C2,C3,...."
+                echo "Using comma delimited list with no whitespaces" 
+                echo "Aborting...."
+                exit 1
+            else 
+                echo "Defining covariates for PRS modelling --coco = $coco" 2>&1 | tee -a $output.prs_analysis.log
+            fi
+
+            if [ -z "$prs_predictors" ]; then 
+                echo "PRS predictors are not specified"
+                echo "Please specify PRS predictors useing --prs_predictors=predictor1,predictor2...."
+                echo "Using comma delimited list with no whitespace.."
+                echo "Aborting..."
+                exit 1 
+            else 
+                echo "Defining PRS predictors for PRS modelling --prs_predictors = $prs_predictors" 2>&1 | tee -a $output.prs_analysis.log
+            fi
+
+            if [ -z "$trait" ]; then 
+                echo "Trait not defined...Please definee if the trait investigated is Binary or Quantitative"
+                echo "Aborting..."
+                exit 1
+            else 
+
+                echo "Indicated trait is $trait" 2>&1 | tee -a $output.prs_analysis.log
+
+            fi
+
+            if [ "$trait" == "Binary" ]; then 
+                if [ -z "$prev" ]; then 
+                    echo "Trait is indicated as Binary - Prevalence not indicated"
+                    echo "We will need the prevalence of the Binary trait to calculate liability parameters"
+                    echo "Aborting..."
+                    exit 1 
+
+                else 
+                    echo "Prevalence of trait is $prev" 2>&1 | tee -a $output.prs_analysis.log
+                fi 
+            fi
+
+        # >>>  
+
+        # Generate R code for modelling 
+
+            # Load modules
+
+                echo "
+                # Load modules
+                library(\"tidyverse\")
+                library(\"data.table\")
+                library(\"pROC\")
+                " > prs_modelling.r 
+
+            # >>> 
+            
+            # Define linear'logistic model functions
+
+                echo "
+                # Define functions
+                rsq_lcc <- function(R2O, data, K) {
+                    caco_n <- data\$PHENO
+                    ncase = length(caco_n[which(caco_n==1)])
+                    ncont = length(caco_n[which(caco_n==0)])
+                    nt  = ncase + ncont  
+                    P   = ncase/nt 
+                    thd = -qnorm(K,0,1) 
+                    zv  = dnorm(thd) 
+                    mv = zv/K
+                    theta = mv*(P-K)/(1-K)*(mv*(P-K)/(1-K)-thd) # theta in equation (15)
+                    cv = K*(1-K)/zv^2*K*(1-K)/(P*(1-P))
+                    R2  = R2O*cv/(1+R2O*theta*cv)
+                    return(R2)
+                }
+
+                nagelkerke <- function(full,null,n){
+                    # r2 <- (1-exp((logLik(null)-logLik(full))[1])^(2/n))/(1-exp(logLik(null)[1])^(2/n))
+                    r2 <- (1-exp(2*(logLik(null)-logLik(full))[1]/n))/(1-(exp(2*logLik(null)[1]/n)))
+                    chisq <- -2*(logLik(null)-logLik(full))
+                    pval  <- pchisq(chisq, (null\$df.residual-full\$df.residual), lower.tail=FALSE)
+                    return(c(r2,chisq,pval))
+                } " >> prs_modelling.r
+            # >>>
+
+            # Load data 
+
+                if [ "$trait" == "Binary" ]; then 
+                    echo "
+                    # Load prs data 
+                        prsfile <- fread(\"$prsfile\",na.strings=\"-9\")
+                    # Load pca file 
+                        pcafile <- fread(\"$pcafile\")
+                    # merge prs pca files
+                        prsdat <- left_join(prsfile, pcafile, by=\"FID\")
+                    # change PHENO 1/2 to 0/1
+                        prsdat\$PHENO <- prsdat\$PHENO-1
+                    # output prsdat
+                        fwrite(prsdat, file=\"prsdatinput.txt\", quote=FALSE, sep=\"\t\", na=\"NA\")
+                    # coerce to data frame
+                        data<-as.data.frame(prsdat)
+                    " >> prs_modelling.r
+                elif [ "$trait" == "Quantitative" ]; then 
+                    echo "
+                    # Load prs data 
+                        prsfile <- fread(\"$prsfile\",na.strings=\"-9\")
+                    # Load pca file 
+                        pcafile <- fread(\"$pcafile\")
+                    # merge prs pca files
+                        prsdat <- left_join(prsfile, pcafile, by=\"FID\")
+                    # output prsdat
+                        fwrite(prsdat, file=\"prsdatinput.txt\", quote=FALSE, sep=\"\t\", na=\"NA\")
+                    # coerce to data frame
+                        data<-as.data.frame(prsdat)
+                    " >> prs_modelling.r
+
+                fi
+
+            # >>> 
+
+            # Perform PRS modelling 
+
+                covariates=$(echo $coco | sed 's/,/\ +\ /g')
+                npredictors=$(echo $prs_predictors | tr ',' '\n' | wc | awk '{print $1}')
+
+                #for i in $(seq $npredictors); do declare predictor_"$i"=$(echo $prs_predictors | tr ',' '\n' | awk -v line=$i '{if(NR==line) print $0}'); done
+
+                for i in $(seq $npredictors)
+                    do echo "$i"
+                done > npredictor.list
+
+                echo $prs_predictors | tr ',' '\n' > prspredictor.list
+
+                if [ "$trait" == "Binary" ]; then 
+
+                    
+                    echo "
+                    # PRS modelling for binary trait
+
+                        # define sample size
+                            caco_n <- prsdat\$PHENO
+                            ncase = length(caco_n[which(caco_n==1)])
+                            ncont = length(caco_n[which(caco_n==0)])
+                            caco_n  = ncase + ncont  
+                    " >> prs_modelling.r
+
+                    while read -u 3 -r i && read -u 4 -r j    
+                        do 
+                            echo "
+                                Null_$i<-glm(formula = \"PHENO ~ $covariates\" , family = \"binomial\", data = data)  
+                                Full_$i<-glm(formula = \"PHENO ~ $j + $covariates\" , family = \"binomial\", data = data)  
+                                Rsq_"$i" <- nagelkerke(Full_$i, Null_$i, caco_n)
+                                LRsq_"$i" <- rsq_lcc(Rsq_"$i", data, $prev)
+                            "
+                    done 3< npredictor.list 4< prspredictor.list >> prs_modelling.r
+
+                elif [ "$trait" == "Quantitative" ]; then 
+
+                    while read -u 3 -r i && read -u 4 -r j    
+                        do
+                            echo "
+                            # PRS modelling for Quantitative trait 
+                                
+                                Null_"$i"<-lm(PHENO ~ $covariates, data = data)  
+                                Full_"$i"<-lm(PHENO ~ $j + $covariates, data = data)  
+                                SSE.null_"$i"<-sum(Null\$residuals**2)  
+                                SSE.full_"$i"<-sum(Full\$residuals**2)  
+                                Rsq_"$i"<-(SSE.null_"$i"-SSE.full_"$i")/SSE.null_"$i"  
+                            " 
+                    done 3< npredictor.list 4< prspredictor.list >> prs_modelling.r
+                fi
+
+                # Combine results 
+
+                    modelR=$(cat npredictor.list | awk '{print "Rsq_"$1}' | tr '\n' ',' | sed s'/.$//')
+
+                    modelLR=$(cat npredictor.list | awk '{print "LRsq_"$1}' | tr '\n' ',' | sed s'/.$//')
+
+                    echo "
+                    # Consolidate PRS results 
+
+                        TotalR <- rbind($modelR)
+
+                        TotalLR <- rbind($modelLR)
+
+                        Total <- cbind(TotalR, TotalLR)
+
+                        Totaldata <- as.data.frame(Total)
+
+                        Totaldata <- Totaldata %>% select(., R2 = V1, R2_liab = V4, Chisq = V2, Pval = V3)
+
+                        fwrite(Totaldata, file=\"prsdatoutput.txt\", quote=FALSE, sep=\" \", na=\"NA\")
+                    " >> prs_modelling.r
+
+                    cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+
+                    paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prspt.results.txt
+                # >>>
+            # >>>
+        # >>>
+    fi 
+    # >>>
 ############################################
