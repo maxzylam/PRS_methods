@@ -1,0 +1,11 @@
+name: prscs
+channels:
+- bioconda
+dependencies:
+- python=2.7
+- h5py
+- pip
+- pip:
+  - scipy
+  - pandas
+  - numpy
