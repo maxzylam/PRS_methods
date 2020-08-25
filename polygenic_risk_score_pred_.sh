@@ -356,7 +356,10 @@
                             process=$(lscpu | sed -n '4,4p' | awk '{print $2}')
                             ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
                         # >>> 
-                    
+                    elif [ "$qsub" == "S" ]; then 
+                        # Run script serially 
+
+                            ls -tr *prscs.weight.calc.script*.sh | xargs -P 1 -n 1 bash
                         # submit to HPC
 
                     elif [ "$qsub" == "Y" ]; then 
@@ -486,7 +489,10 @@
                         process=$(lscpu | sed -n '4,4p' | awk '{print $2}')
                         ls -tr *prscs.weight.calc.script*.sh | xargs -P $process -n 1 bash
                     # >>> 
-                
+                elif [ "$qsub" == "S" ]; then 
+                    # Run script serially 
+
+                        ls -tr *prscs.weight.calc.script*.sh | xargs -P 1 -n 1 bash
                     # submit to HPC
 
                 elif [ "$qsub" == "Y" ]; then 

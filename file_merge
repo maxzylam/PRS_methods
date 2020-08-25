@@ -1,0 +1,8 @@
+
+        library("data.table")
+        library("tidyverse")
+        file1 <- fread("FILE1")
+        file2 <- fread("FILE2")
+        file1file2 <- inner_join(file1, file2, by="KEY")
+        fwrite(file1file2, file="OUTMERGE", quote=FALSE, sep="\t", na="NA")
+    
