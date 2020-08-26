@@ -371,7 +371,7 @@
                         printf "\nThe PRS wrapper script would exit momentarily to allow for the HPC job to complete\n\n" 2>&1 | tee -a $output.prs_analysis.log
                         printf "\nWhen the HPC jobs are completed - allelic scoring can be carried out using the --prscs_ASC=Y flag" 2>&1 | tee -a $output.prs_analysis.log
                     fi 
-
+                    sleep 60
                     gzip $sumstats_1 
                 # >>> 
         ############################################
