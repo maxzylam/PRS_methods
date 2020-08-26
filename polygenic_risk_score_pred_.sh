@@ -1468,7 +1468,7 @@
         ############################################
         ### Move files to folder
 
-            if [[ -f $output.prscs.file.txt && -f $output.prscs.results.txt ]]; then 
+            if [[ -f $output.prs.file.txt && -f $output.prspt.results.txt ]]; then 
                 printf "\nPRS-PT  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
                 mkdir $output.prspt
