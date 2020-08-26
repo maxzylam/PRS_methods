@@ -1211,8 +1211,8 @@
                 # >>>
 
                 # Create score.txt files 
-                    while read prsfile 
-                        do cat $prsfile | awk '{print $4, $6}' > $prsfile.prs.score.txt
+                    while read scorefile 
+                        do cat $scorefile | awk '{print $4, $6}' > $scorefile.prs.score.txt
                     done < $output.profile.list
                 # >>> 
 
