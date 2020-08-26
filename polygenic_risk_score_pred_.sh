@@ -1485,7 +1485,15 @@
                 mv $output.scoring.log $output.prspt
                 mv $output.ID.txt $output.prspt
                 mv $output.prs.file.txt $output.prspt
-
+                mv npredictor.list $output.prspt
+                mv prspredictor.list $output.prspt
+                mv prs_modelling.r $output.prspt
+                mv prsdatinput.txt $output.prspt
+                mv prsdatoutput.txt $output.prspt
+                mv prs_modelling.r.Rout $output.prspt
+                mv $output.prspredictors.txt $output.prspt
+                mv $output.prspt.results.txt $output.prspt
+                mv $output.prs_analysis.log $output.prspt
 
 
             else
