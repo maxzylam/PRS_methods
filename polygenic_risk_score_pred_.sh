@@ -618,7 +618,12 @@
 
                             R CMD BATCH --no-save prs_modelling.r
 
-                            cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            if [ -f $output.range_list ]; then 
+
+                                cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            else 
+                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            fi
 
                             paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prscs.results.txt
                         # >>>
@@ -631,13 +636,22 @@
         ############################################
         ### Move files to folder
 
-            if [ -f $output.prscs.file.txt ]; then 
+            if [[ -f $output.prscs.file.txt && -f $output.prscs.results.txt ]]; then 
                 printf "\nPRSCS  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
                 mkdir $output.prscs
                 mv *prscs* $output.prscs
                 mv *pst_eff* $output.prscs
                 gzip $sumstats_1
+                mv npredictor.list $output.prscs
+                mv prspredictor.list $output.prscs
+                mv prs_modelling.r $output.prscs
+                mv prsdatinput.txt $output.prscs
+                mv prsdatoutput.txt $output.prscs
+                mv prs_modelling.r.Rout $output.prscs
+                mv $output.prspredictors.txt $output.prscs
+                mv $output.prs_analysis.log $output.prscs
+
 
             else
                 printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
@@ -999,7 +1013,12 @@
 
                             R CMD BATCH --no-save prs_modelling.r
 
-                            cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            if [ -f $output.range_list ]; then 
+
+                                cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            else 
+                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            fi
 
                             paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prscsx.results.txt
                         # >>>
@@ -1012,7 +1031,7 @@
         ############################################
         ### Move files to folder
 
-            if [ -f $output.prscsx.file.txt ]; then 
+            if [[ -f $output.prscs.file.txt && -f $output.prscs.results.txt ]]; then 
                 printf "\nPRSCSx  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
                 mkdir $output.prscsx
@@ -1020,6 +1039,15 @@
                 mv *pst_eff* $output.prscsx
                 gzip $sumstats_1
                 gzip $sumstats_2
+                mv npredictor.list $output.prscsx
+                mv prspredictor.list $output.prscsx
+                mv prs_modelling.r $output.prscsx
+                mv prsdatinput.txt $output.prscsx
+                mv prsdatoutput.txt $output.prscsx
+                mv prs_modelling.r.Rout $output.prscsx
+                mv $output.prspredictors.txt $output.prscsx
+                mv $output.prs_analysis.log $output.prscsx
+
 
             else
                 printf "\nCan't find allele score file - please check that the file format and options were indicated right\n\n...Aborting...." 2>&1 | tee -a $output.prs_analysis.log
@@ -1420,7 +1448,13 @@
 
                             R CMD BATCH --no-save prs_modelling.r
 
-                            cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            if [ -f $output.range_list ]; then 
+
+                                cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            else 
+                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                            fi
+
 
                             paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prspt.results.txt
                         # >>>
@@ -1433,7 +1467,7 @@
         ############################################
         ### Move files to folder
 
-            if [ -f $output.prs.file.txt ]; then 
+            if [[ -f $output.prscs.file.txt && -f $output.prscs.results.txt ]]; then 
                 printf "\nPRS-PT  allelic scoring is complete\041\041...$(date)\n" 2>&1 | tee -a $output.prs_analysis.log
             
                 mkdir $output.prspt
