@@ -258,8 +258,13 @@
     # File check 
 
         if [ ! -f "$sumstats" ]; then 
-            echo "Can't find sumstats file - Aborting"
-            exit 1 
+            
+            sumstats_1=$(echo $sumstats | sed 's/.gz//g')
+                
+                if [ ! -f $sumstats_1 ]; then 
+                    echo "Can't find sumstats file - Aborting"
+                    exit 1 
+                fi 
         fi 
 
         if [ ! -f "$target.fam" ]; then 
@@ -372,7 +377,7 @@
                         printf "\nWhen the HPC jobs are completed - allelic scoring can be carried out using the --prscs_ASC=Y flag" 2>&1 | tee -a $output.prs_analysis.log
                     fi 
                     sleep 60
-                    gzip $sumstats_1 
+
                 # >>> 
         ############################################
 
@@ -643,7 +648,7 @@
                 mkdir $output.prscs
                 mv *prscs* $output.prscs
                 mv *pst_eff* $output.prscs
-                #gzip $sumstats_1
+                gzip $sumstats_1
                 mv npredictor.list $output.prscs
                 mv prspredictor.list $output.prscs
                 mv prs_modelling.r $output.prscs
