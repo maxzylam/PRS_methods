@@ -623,7 +623,7 @@
 
                                 cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             else 
-                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                                head -1 $output.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             fi
 
                             paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prscs.results.txt
@@ -1018,7 +1018,7 @@
 
                                 cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             else 
-                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                                head -1 $output.prscsx.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             fi
 
                             paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prscsx.results.txt
