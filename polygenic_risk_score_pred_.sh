@@ -237,7 +237,7 @@
                             pcafile=$VALUE
                             ;;
                     --coco)
-                            coco==$VALUE 
+                            coco=$VALUE 
                             ;;
                     --prs_predictors)
                             prs_predictors=$VALUE
