@@ -257,34 +257,41 @@
     
     # File check 
 
-        if [ ! -f "$sumstats" ]; then 
-            
-            sumstats_1=$(echo $sumstats | sed 's/.gz//g')
+        if [ "$prsmodelling" == "M" ]; then 
+
+            echo "bypassing prs modelling filechecks"
+        
+        else 
+
+            if [ ! -f "$sumstats" ]; then 
                 
-                if [ ! -f $sumstats_1 ]; then 
-                    echo "Can't find sumstats file - Aborting"
-                    exit 1 
-                fi 
-        fi 
+                sumstats_1=$(echo $sumstats | sed 's/.gz//g')
+                    
+                    if [ ! -f $sumstats_1 ]; then 
+                        echo "Can't find sumstats file - Aborting"
+                        exit 1 
+                    fi 
+            fi 
 
-        if [ ! -f "$target.fam" ]; then 
-            echo "Can't find target fam file - Aborting"
-            exit 1 
-        fi 
+            if [ ! -f "$target.fam" ]; then 
+                echo "Can't find target fam file - Aborting"
+                exit 1 
+            fi 
 
-        if [ ! -f "$target.bim" ]; then 
-            echo "Can't find target bim file - Aborting"
-            exit 1 
-        fi 
+            if [ ! -f "$target.bim" ]; then 
+                echo "Can't find target bim file - Aborting"
+                exit 1 
+            fi 
 
-        if [ ! -f "$target.bed" ]; then 
-            echo "Can't find target bed file - Aborting"
-            exit 1 
-        fi 
+            if [ ! -f "$target.bed" ]; then 
+                echo "Can't find target bed file - Aborting"
+                exit 1 
+            fi 
 
-        if [ -z "$output" ]; then 
-            echo "Plese define output file before proceed - Aborting"
-            exit 1 
+            if [ -z "$output" ]; then 
+                echo "Plese define output file before proceed - Aborting"
+                exit 1 
+            fi
         fi
     # >>>
 
@@ -396,7 +403,7 @@
             # >>> 
 
             # allelic scoring 
-                $path2plink/plink --bfile $target --score $output.prscs.snp.weights.txt 2 4 6 --out $output.prscs.scoring
+                $path2plink/plink --bfile $target --score $output.prscs.snp.weights.txt 2 4 6 --out $output.prscs.scoring --allow-no-sex
             # >>>
 
             # extract prs scores 
@@ -1196,7 +1203,7 @@
 
             # plink allelic scoring procedure
 
-                $path2plink/plink --bfile $target --score $output.xmhc.clumped.sort.combined 1 5 7 header --q-score-range $output.range_list $output.pvalue --out $output.scoring
+                $path2plink/plink --bfile $target --score $output.xmhc.clumped.sort.combined 1 5 7 header --q-score-range $output.range_list $output.pvalue --out $output.scoring --allow-no-sex
                 
                 # addlog
                     cat $output.scoring.log >> $output.prs_analysis.log
@@ -1458,7 +1465,7 @@
 
                                 cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             else 
-                                head -1 trait1-a-tmi1-run1.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                                head -1 $ouput.prscs.file.txt | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
                             fi
 
 
@@ -1510,3 +1517,237 @@
     fi 
 ############################################
 
+############################################
+### PRS modelling [ONLY] 
+    if [ "$prsmodelling" == "M" ]; then 
+        # Logger  
+
+            printf "\nStarting Procedures for PRS modelling....$(date)\n\n" 2>&1 | tee -a $output.prs_analysis.log
+
+        # >>>
+
+        # file checks 
+
+            if [ ! -f "$prsfile" ]; then 
+                echo "Can't find prs file - plese check if you are in the right directory!"
+                echo "Aborting now..."
+                exit 1
+            fi 
+
+            if [ ! -f "$pcafile" ]; then 
+                echo "Can't fine pca file - please check that the pca file is copied into the prs directory"
+                echo "Also, we are highly encouraging users to run their genotype data through the RICOPILI pipeline for QC and PCA procedures"
+                echo "Aborting..."
+                exit 1 
+            fi
+
+            if [ -z "$coco" ]; then 
+                echo "Covariates not specified for PRS modelling"
+                echo "Please specify covariates using the --coco=C1,C2,C3,...."
+                echo "Using comma delimited list with no whitespaces" 
+                echo "Aborting...."
+                exit 1
+            else 
+                echo "Defining covariates for PRS modelling --coco = $coco" 2>&1 | tee -a $output.prs_analysis.log
+            fi
+
+            if [ -z "$prs_predictors" ]; then 
+                echo "PRS predictors are not specified"
+                echo "Please specify PRS predictors useing --prs_predictors=predictor1,predictor2...."
+                echo "Using comma delimited list with no whitespace.."
+                echo "Aborting..."
+                exit 1 
+            else 
+                echo "Defining PRS predictors for PRS modelling --prs_predictors = $prs_predictors" 2>&1 | tee -a $output.prs_analysis.log
+            fi
+
+            if [ -z "$trait" ]; then 
+                echo "Trait not defined...Please definee if the trait investigated is Binary or Quantitative"
+                echo "Aborting..."
+                exit 1
+            else 
+
+                echo "Indicated trait is $trait" 2>&1 | tee -a $output.prs_analysis.log
+
+            fi
+
+            if [ "$trait" == "Binary" ]; then 
+                if [ -z "$prev" ]; then 
+                    echo "Trait is indicated as Binary - Prevalence not indicated"
+                    echo "We will need the prevalence of the Binary trait to calculate liability parameters"
+                    echo "Aborting..."
+                    exit 1 
+
+                else 
+                    echo "Prevalence of trait is $prev" 2>&1 | tee -a $output.prs_analysis.log
+                fi 
+            fi
+
+        # >>>  
+
+        # Generate R code for modelling 
+
+            # Load modules
+
+                echo "
+                # Load modules
+                library(\"tidyverse\")
+                library(\"data.table\")
+                library(\"pROC\")
+                " > prs_modelling.r 
+
+            # >>> 
+            
+            # Define linear'logistic model functions
+
+                echo "
+                # Define functions
+                rsq_lcc <- function(R2O, data, K) {
+                    caco_n <- data\$PHENO
+                    ncase = length(caco_n[which(caco_n==1)])
+                    ncont = length(caco_n[which(caco_n==0)])
+                    nt  = ncase + ncont  
+                    P   = ncase/nt 
+                    thd = -qnorm(K,0,1) 
+                    zv  = dnorm(thd) 
+                    mv = zv/K
+                    theta = mv*(P-K)/(1-K)*(mv*(P-K)/(1-K)-thd) # theta in equation (15)
+                    cv = K*(1-K)/zv^2*K*(1-K)/(P*(1-P))
+                    R2  = R2O*cv/(1+R2O*theta*cv)
+                    return(R2)
+                }
+
+                nagelkerke <- function(full,null,n){
+                    # r2 <- (1-exp((logLik(null)-logLik(full))[1])^(2/n))/(1-exp(logLik(null)[1])^(2/n))
+                    r2 <- (1-exp(2*(logLik(null)-logLik(full))[1]/n))/(1-(exp(2*logLik(null)[1]/n)))
+                    chisq <- -2*(logLik(null)-logLik(full))
+                    pval  <- pchisq(chisq, (null\$df.residual-full\$df.residual), lower.tail=FALSE)
+                    return(c(r2,chisq,pval))
+                } " >> prs_modelling.r
+            # >>>
+
+            # Load data 
+
+                if [ "$trait" == "Binary" ]; then 
+                    echo "
+                    # Load prs data 
+                        prsfile <- fread(\"$prsfile\",na.strings=\"-9\")
+                    # Load pca file 
+                        pcafile <- fread(\"$pcafile\")
+                    # merge prs pca files
+                        prsdat <- left_join(prsfile, pcafile, by=\"FID\")
+                    # change PHENO 1/2 to 0/1
+                        prsdat\$PHENO <- prsdat\$PHENO-1
+                    # output prsdat
+                        fwrite(prsdat, file=\"prsdatinput.txt\", quote=FALSE, sep=\"\t\", na=\"NA\")
+                    # coerce to data frame
+                        data<-as.data.frame(prsdat)
+                    " >> prs_modelling.r
+                elif [ "$trait" == "Quantitative" ]; then 
+                    echo "
+                    # Load prs data 
+                        prsfile <- fread(\"$prsfile\",na.strings=\"-9\")
+                    # Load pca file 
+                        pcafile <- fread(\"$pcafile\")
+                    # merge prs pca files
+                        prsdat <- left_join(prsfile, pcafile, by=\"FID\")
+                    # output prsdat
+                        fwrite(prsdat, file=\"prsdatinput.txt\", quote=FALSE, sep=\"\t\", na=\"NA\")
+                    # coerce to data frame
+                        data<-as.data.frame(prsdat)
+                    " >> prs_modelling.r
+
+                fi
+
+            # >>> 
+
+            # Perform PRS modelling 
+
+                covariates=$(echo $coco | sed 's/,/\ +\ /g')
+                npredictors=$(echo $prs_predictors | tr ',' '\n' | wc | awk '{print $1}')
+
+                #for i in $(seq $npredictors); do declare predictor_"$i"=$(echo $prs_predictors | tr ',' '\n' | awk -v line=$i '{if(NR==line) print $0}'); done
+
+                for i in $(seq $npredictors)
+                    do echo "$i"
+                done > npredictor.list
+
+                echo $prs_predictors | tr ',' '\n' > prspredictor.list
+
+                if [ "$trait" == "Binary" ]; then 
+
+                    
+                    echo "
+                    # PRS modelling for binary trait
+
+                        # define sample size
+                            caco_n <- prsdat\$PHENO
+                            ncase = length(caco_n[which(caco_n==1)])
+                            ncont = length(caco_n[which(caco_n==0)])
+                            caco_n  = ncase + ncont  
+                    " >> prs_modelling.r
+
+                    while read -u 3 -r i && read -u 4 -r j    
+                        do 
+                            echo "
+                                Null_$i<-glm(formula = \"PHENO ~ $covariates\" , family = \"binomial\", data = data)  
+                                Full_$i<-glm(formula = \"PHENO ~ $j + $covariates\" , family = \"binomial\", data = data)  
+                                Rsq_"$i" <- nagelkerke(Full_$i, Null_$i, caco_n)
+                                LRsq_"$i" <- rsq_lcc(Rsq_"$i", data, $prev)
+                            "
+                    done 3< npredictor.list 4< prspredictor.list >> prs_modelling.r
+
+                elif [ "$trait" == "Quantitative" ]; then 
+
+                    while read -u 3 -r i && read -u 4 -r j    
+                        do
+                            echo "
+                            # PRS modelling for Quantitative trait 
+                                
+                                Null_"$i"<-lm(PHENO ~ $covariates, data = data)  
+                                Full_"$i"<-lm(PHENO ~ $j + $covariates, data = data)  
+                                SSE.null_"$i"<-sum(Null\$residuals**2)  
+                                SSE.full_"$i"<-sum(Full\$residuals**2)  
+                                Rsq_"$i"<-(SSE.null_"$i"-SSE.full_"$i")/SSE.null_"$i"  
+                            " 
+                    done 3< npredictor.list 4< prspredictor.list >> prs_modelling.r
+                fi
+
+                # Combine results 
+
+                    modelR=$(cat npredictor.list | awk '{print "Rsq_"$1}' | tr '\n' ',' | sed s'/.$//')
+
+                    modelLR=$(cat npredictor.list | awk '{print "LRsq_"$1}' | tr '\n' ',' | sed s'/.$//')
+
+                    echo "
+                    # Consolidate PRS results 
+
+                        TotalR <- rbind($modelR)
+
+                        TotalLR <- rbind($modelLR)
+
+                        Total <- cbind(TotalR, TotalLR)
+
+                        Totaldata <- as.data.frame(Total)
+
+                        Totaldata <- Totaldata %>% select(., R2 = V1, R2_liab = V4, Chisq = V2, Pval = V3)
+
+                        fwrite(Totaldata, file=\"prsdatoutput.txt\", quote=FALSE, sep=\" \", na=\"NA\")
+                    " >> prs_modelling.r
+
+                    R CMD BATCH --no-save prs_modelling.r
+
+                    if [ -f $output.range_list ]; then 
+
+                        cat $output.range_list | awk '{print $1}' | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                    else 
+                        head -1 $prsfile | tr ' ' '\n' | grep SCORE | sed '1 i\PRS_predictors' > $output.prspredictors.txt
+                    fi
+
+                    paste -d ' '  $output.prspredictors.txt prsdatoutput.txt > $output.prscs.results.txt
+                # >>>
+            # >>>
+        # >>>
+    fi 
+    # >>>
+############################################
